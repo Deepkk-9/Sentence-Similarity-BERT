@@ -1,0 +1,38 @@
+# Python Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+env/
+venv/
+ENV/
+.env
+.venv
+
+# Flask instance folder
+instance/
+
+# Pytest
+.cache
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# Pytest cache
+.pytest_cache/
+
+# Log files
+*.log
+
+# Miscellaneous
+*.DS_Store
+*.egg-info/
+*.egg
+
+# VS Code settings
+.vscode/
