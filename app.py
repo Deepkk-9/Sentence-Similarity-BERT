@@ -6,6 +6,9 @@ from sklearn.metrics.pairwise import cosine_similarity, pairwise_distances
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 
+# Set the matplotlib backend to 'Agg' to avoid GUI issues
+plt.switch_backend('Agg')
+
 app = Flask(__name__)
 
 # Load the Sentence-BERT model
@@ -26,7 +29,7 @@ def cluster_questions():
     distance_matrix = 1 - cosine_sim_matrix
 
     # Apply DBSCAN
-    dbscan = DBSCAN(eps=0.2, min_samples=2)  # Adjust eps according to your data
+    dbscan = DBSCAN(eps=0.3, min_samples=1)  # Adjust eps according to your data
     clusters = dbscan.fit_predict(distance_matrix)
 
     # Prepare response
