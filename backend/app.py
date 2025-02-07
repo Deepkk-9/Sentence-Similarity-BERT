@@ -29,7 +29,7 @@ def cluster_questions():
     distance_matrix = 1 - cosine_sim_matrix
 
     # Apply DBSCAN
-    dbscan = DBSCAN(eps=0.3, min_samples=1)  # Adjust eps according to your data
+    dbscan = DBSCAN(eps=0.9, min_samples=1)  # Adjust eps according to your data
     clusters = dbscan.fit_predict(distance_matrix)
 
     # Prepare response
