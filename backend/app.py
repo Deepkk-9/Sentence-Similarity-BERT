@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import numpy as np
 from sklearn.cluster import DBSCAN
 from sentence_transformers import SentenceTransformer
@@ -10,6 +11,7 @@ from sklearn.decomposition import PCA
 plt.switch_backend('Agg')
 
 app = Flask(__name__)
+CORS(app)
 
 # Load the Sentence-BERT model
 model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -29,7 +31,7 @@ def cluster_questions():
     distance_matrix = 1 - cosine_sim_matrix
 
     # Apply DBSCAN
-    dbscan = DBSCAN(eps=0.9, min_samples=1)  # Adjust eps according to your data
+    dbscan = DBSCAN(eps=0.2, min_samples=1)  # Adjust eps according to your data
     clusters = dbscan.fit_predict(distance_matrix)
 
     # Prepare response
