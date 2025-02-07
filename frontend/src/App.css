@@ -1,0 +1,11 @@
+/* src/App.css */
+
+.App {
+  text-align: center;
+  margin: 20px;
+}
+
+textarea {
+  width: 100%;
+  margin: 10px 0;
+}
