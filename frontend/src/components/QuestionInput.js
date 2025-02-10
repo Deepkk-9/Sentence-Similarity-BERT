@@ -1,10 +1,9 @@
-// src/components/QuestionInput.js
-
 import React, { useState } from 'react';
 import axios from 'axios';
 
 const QuestionInput = ({ onClustersReceived }) => {
   const [questions, setQuestions] = useState('');
+  const [source, setSource] = useState('dbscan'); // Default selection
   const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
@@ -14,8 +13,8 @@ const QuestionInput = ({ onClustersReceived }) => {
     const questionArray = questions.split('\n').filter(q => q.trim() !== '');
 
     try {
-      const response = await axios.post('http://127.0.0.1:5000/cluster', {
-        questions: questionArray,  // Correctly sending questionArray
+      const response = await axios.post(`http://127.0.0.1:5000/cluster/${source}`, {
+        questions: questionArray,
       });
       onClustersReceived(response.data);
     } catch (err) {
@@ -34,12 +33,28 @@ const QuestionInput = ({ onClustersReceived }) => {
             id="questions"
             value={questions}
             onChange={(e) => setQuestions(e.target.value)}
-            placeholder='Enter one Question per line'
+            placeholder='Enter one question per line'
             rows="4"
             required
             className="form-control mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50 p-2"
           />
         </div>
+        
+        {/* Dropdown for selecting clustering algorithm */}
+        <div className="form-group mt-4">
+          <label htmlFor="algorithm" className="block text-lg font-semibold">Select Clustering Algorithm:</label>
+          <select
+            id="algorithm"
+            value={source}
+            onChange={(e) => setSource(e.target.value)}
+            className="form-control mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+          >
+            <option value="dbscan">DBSCAN</option>
+            <option value="hdbscan">HDBSCAN</option>
+            <option value="agglomerative">Agglomerative</option>
+          </select>
+        </div>
+        
         <button
           type="submit"
           className="mt-4 bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition duration-200"
@@ -47,12 +62,6 @@ const QuestionInput = ({ onClustersReceived }) => {
           Submit
         </button>
       </form>
-
-      <div className="mt-5">
-        {/* This part will display clusters if available */}
-        {/* You can replace this comment with a conditional rendering logic based on your application state */}
-        {/* Example: {clusters.length > 0 && <ClusterDisplay clusters={clusters} />} */}
-      </div>
 
       {error && <p className="text-red-500 mt-2">{error}</p>}
     </div>

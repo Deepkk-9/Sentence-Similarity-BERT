@@ -9,7 +9,7 @@ const Modal = ({ isOpen, onClose, questions }) => {
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-70 transition-opacity duration-300">
       <div className="bg-white rounded-lg shadow-lg p-6 max-w-lg w-full transform transition-transform duration-300 scale-100">
         <h2 className="text-2xl font-semibold mb-4 text-center">Questions in Cluster</h2>
-        <ul className="list-disc pl-5 mb-4">
+        <ul className="list-disc pl-5 mb-4 h-96 overflow-scroll">
           {questions.map((question, index) => (
             <li key={index} className="mb-2 text-gray-800">{question}</li>
           ))}
