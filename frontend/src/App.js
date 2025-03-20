@@ -6,18 +6,18 @@ import ClusterDisplay from './components/ClusterDisplay';
 import './App.css';
 
 const App = () => {
-  const [clusters, setClusters] = useState({});
+    const [clusters, setClusters] = useState({});
 
-  const handleClustersReceived = (data) => {
-    setClusters(data.clusters);
-  };
+    const handleClustersReceived = (data) => {
+        setClusters(data.clusters);
+    };
 
-  return (
-    <div className="App">
-      <QuestionInput onClustersReceived={handleClustersReceived} />
-      <ClusterDisplay clusters={clusters} />
-    </div>
-  );
+    return (
+        <div className="App">
+            <QuestionInput onClustersReceived={handleClustersReceived} />
+            <ClusterDisplay clusters={clusters} />
+        </div>
+    );
 };
 
 export default App;

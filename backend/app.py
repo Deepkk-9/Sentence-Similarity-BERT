@@ -1,38 +1,46 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import numpy as np
-from sklearn.cluster import DBSCAN
+import pandas as pd 
+from sklearn.cluster import DBSCAN, AgglomerativeClustering
+import hdbscan
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity, pairwise_distances
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+import seaborn as sns
 
-# Set the matplotlib backend to 'Agg' to avoid GUI issues
+# Set matplotlib backend
 plt.switch_backend('Agg')
 
 app = Flask(__name__)
 CORS(app)
 
-# Load the Sentence-BERT model
+# Load Sentence-BERT model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-@app.route('/cluster', methods=['POST'])
-def cluster_questions():
-    data = request.json
-    questions = data.get('questions', [])
-
+def generate_clusters(questions, clustering_method):
+    """Function to generate clusters based on the chosen method"""
     # Generate embeddings
     embeddings = model.encode(questions)
 
     # Compute the cosine similarity matrix
     cosine_sim_matrix = cosine_similarity(embeddings)
 
-    # Convert cosine similarity to distance (1 - similarity)
-    distance_matrix = 1 - cosine_sim_matrix
+    # Convert cosine similarity to distance
+    distance_matrix = 1 - np.clip(cosine_sim_matrix, 0, 1)
 
-    # Apply DBSCAN
-    dbscan = DBSCAN(eps=0.2, min_samples=1)  # Adjust eps according to your data
-    clusters = dbscan.fit_predict(distance_matrix)
+    if clustering_method == "dbscan":
+        cluster_model = DBSCAN(eps=0.65, min_samples=1, metric='precomputed')
+    elif clustering_method == "hdbscan":
+        cluster_model = hdbscan.HDBSCAN(min_cluster_size=2, metric='precomputed', cluster_selection_method='eom')
+    elif clustering_method == "agglomerative":
+        cluster_model = AgglomerativeClustering(n_clusters=None, affinity='precomputed', linkage='average', distance_threshold=0.5)
+    else:
+        return jsonify({"error": "Invalid clustering method"}), 400
+
+    clusters = cluster_model.fit_predict(distance_matrix.astype(np.float64))
 
     # Prepare response
     response = {
@@ -41,114 +49,113 @@ def cluster_questions():
         'inter_distances': {}
     }
 
-    # Handle clusters and noise
+    # Data for Excel file
+    excel_data = []
+
     unique_labels = set(clusters)
     for label in unique_labels:
-        # Convert label to a regular Python integer
-        label = int(label)  
+        label = int(label)  # Convert to integer
         cluster_questions = [questions[i] for i in range(len(questions)) if clusters[i] == label]
         cluster_embeddings = embeddings[clusters == label]
 
-        if cluster_questions:  # Ensure there are questions in the cluster
-            # Find representative question for the current cluster
+        if cluster_questions:
             representative_question = get_representative_question(cluster_questions, cluster_embeddings)
-
-            # Calculate intra-cluster distance
             intra_distance = calculate_intra_cluster_distance(cluster_embeddings)
-            response['intra_distances'][label] = float(intra_distance)  # Convert to Python float
+            response['intra_distances'][label] = float(intra_distance)
 
-            # Calculate centroid
             centroid = np.mean(cluster_embeddings, axis=0)
-
-            # Calculate distances from centroid for each question
             distances_from_centroid = np.linalg.norm(cluster_embeddings - centroid, axis=1)
 
-            # Add to response
             response['clusters'][label] = {
                 'questions': cluster_questions,
                 'representative_question': representative_question,
-                'distances_from_centroid': distances_from_centroid.tolist()  # Convert to list for JSON serialization
+                'distances_from_centroid': distances_from_centroid.tolist()
             }
 
-    # Calculate inter-cluster distances
+            # Add data to Excel file
+            for q in cluster_questions:
+                excel_data.append([q, label, representative_question])
+
+    # Convert data to DataFrame and save to Excel
+    df = pd.DataFrame(excel_data, columns=['Question', 'Cluster Label', 'Representative Question'])
+    df.to_excel('clusters.xlsx', index=False)
+
     response['inter_distances'] = calculate_inter_cluster_distance(embeddings, clusters)
-
-    # Plotting the clusters in 2D
     plot_clusters(embeddings, clusters, questions)
-
+    
     return jsonify(response)
 
+@app.route('/cluster/dbscan', methods=['POST'])
+def cluster_dbscan():
+    data = request.json
+    questions = data.get('questions', [])
+    return generate_clusters(questions, "dbscan")
+
+@app.route('/cluster/hdbscan', methods=['POST'])
+def cluster_hdbscan():
+    data = request.json
+    questions = data.get('questions', [])
+    return generate_clusters(questions, "hdbscan")
+
+@app.route('/cluster/agglomerative', methods=['POST'])
+def cluster_agglomerative():
+    data = request.json
+    questions = data.get('questions', [])
+    return generate_clusters(questions, "agglomerative")
 
 def get_representative_question(cluster_questions, cluster_embeddings):
-    # Calculate the centroid of the embeddings
     centroid = np.mean(cluster_embeddings, axis=0)
-
-    # Calculate distances from centroid to each embedding in the cluster
     distances = np.linalg.norm(cluster_embeddings - centroid, axis=1)
-
-    # Get the index of the closest question to the centroid
     closest_index = np.argmin(distances)
-
-    # Return the closest question
     return cluster_questions[closest_index]
 
 def calculate_intra_cluster_distance(cluster_embeddings):
-    """Calculate average intra-cluster distance."""
     if len(cluster_embeddings) > 1:
         pairwise_dists = pairwise_distances(cluster_embeddings)
         avg_intra_distance = np.mean(pairwise_dists[np.triu_indices(len(cluster_embeddings), k=1)])
         return avg_intra_distance
-    return 0.0  # Only one point in the cluster
+    return 0.0
 
 def calculate_inter_cluster_distance(embeddings, clusters):
-    """Calculate inter-cluster distances between centroids."""
     unique_labels = set(clusters)
-    centroids = {}
+    centroids = {label: np.mean(embeddings[clusters == label], axis=0) for label in unique_labels if label != -1}
     
-    for label in unique_labels:
-        if label != -1:  # Exclude noise
-            centroids[label] = np.mean(embeddings[clusters == label], axis=0)
-
-    # Calculate distances between centroids
     inter_distances = {}
     centroid_keys = list(centroids.keys())
     for i in range(len(centroid_keys)):
         for j in range(i + 1, len(centroid_keys)):
             dist = np.linalg.norm(centroids[centroid_keys[i]] - centroids[centroid_keys[j]])
-            # Convert tuple key to string and ensure float is standard Python float
             inter_distances[f"{centroid_keys[i]}-{centroid_keys[j]}"] = float(dist)
 
     return inter_distances
 
 def plot_clusters(embeddings, clusters, questions):
-    """Plot the clusters in 2D and annotate points with question labels."""
-    # Reduce dimensions for plotting
     pca = PCA(n_components=2)
     reduced_embeddings = pca.fit_transform(embeddings)
 
     plt.figure(figsize=(10, 6))
-
-    # Plot each cluster
     unique_labels = set(clusters)
+    
     for label in unique_labels:
-        if label == -1:  # Plot noise
-            noise_points = reduced_embeddings[clusters == -1]
-            plt.scatter(noise_points[:, 0], noise_points[:, 1], color='red', label='Noise', s=100)
-        else:  # Plot regular clusters
-            cluster_points = reduced_embeddings[clusters == label]
-            plt.scatter(cluster_points[:, 0], cluster_points[:, 1], label=f'Cluster {label}', s=100)
+        indices = np.where(clusters == label)[0]  # Correct indexing
+        if label == -1:
+            plt.scatter(reduced_embeddings[indices, 0], reduced_embeddings[indices, 1], color='red', label='Noise', s=100)
+        else:
+            plt.scatter(reduced_embeddings[indices, 0], reduced_embeddings[indices, 1], label=f'Cluster {label}', s=100)
 
-    # Annotate points with their respective questions
     for i, question in enumerate(questions):
-        plt.text(reduced_embeddings[i, 0], reduced_embeddings[i, 1], question, fontsize=9)
+        plt.text(reduced_embeddings[i, 0], reduced_embeddings[i, 1], str(i), fontsize=9)
 
     plt.title('Question Clusters')
     plt.xlabel('PCA Component 1')
     plt.ylabel('PCA Component 2')
     plt.legend()
     plt.grid(True)
-    plt.savefig('clusters_plot.png')  # Save the plot to a file
-    plt.close()  # Close the plot to free up memory
+
+    # Save the plot as an image file
+    plt.savefig('clusters_plot.png')
+    plt.close()
+
 
 if __name__ == '__main__':
     app.run(debug=True)
