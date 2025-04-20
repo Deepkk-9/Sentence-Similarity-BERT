@@ -13,7 +13,7 @@ const QuestionInput = ({ onClustersReceived }) => {
         const questionArray = questions.split('\n').filter(q => q.trim() !== '');
 
         try {
-            const response = await axios.post(`https://sentence-similarity-bert.onrender.com/cluster/${source}`, {
+            const response = await axios.post(`https://sentence-similarity-bert-deepkk-9.up.railway.app/cluster/${source}`, {
                 questions: questionArray,
             });
             onClustersReceived(response.data);

@@ -24,6 +24,7 @@ from nltk.chunk import RegexpParser
 
 # Download necessary NLTK data
 nltk.download('punkt', quiet=True)
+nltk.download('averaged_perceptron_tagger', quiet=True)
 nltk.download('averaged_perceptron_tagger_eng', quiet=True)
 nltk.download('punkt_tab', quiet=True)
 
@@ -172,6 +173,10 @@ def get_representative_by_parsing(cluster_questions):
             best_question = q
             
     return best_question
+
+@app.route('/')
+def home():
+    return 'Hello Deep, Im Flask from Railway!'
 
 @app.route('/cluster/dbscan', methods=['POST'])
 def cluster_dbscan():
