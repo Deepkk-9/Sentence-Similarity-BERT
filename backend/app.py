@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 import numpy as np
 import pandas as pd 
 from sklearn.cluster import DBSCAN, AgglomerativeClustering
@@ -179,6 +179,7 @@ def home():
     return 'Hello Deep, Im Flask from Railway!'
 
 @app.route('/cluster/dbscan', methods=['POST'])
+@cross_origin(origins="*")
 def cluster_dbscan():
     try:
         data = request.json
@@ -189,6 +190,7 @@ def cluster_dbscan():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/cluster/hdbscan', methods=['POST'])
+@cross_origin(origins="*")
 def cluster_hdbscan():
     try:
         data = request.json
@@ -199,6 +201,7 @@ def cluster_hdbscan():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/cluster/agglomerative', methods=['POST'])
+@cross_origin(origins="*")
 def cluster_agglomerative():
     try:
         data = request.json
@@ -209,6 +212,7 @@ def cluster_agglomerative():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/cluster/lda', methods=['POST'])
+@cross_origin(origins="*")
 def cluster_lda():
     try:
         data = request.json
