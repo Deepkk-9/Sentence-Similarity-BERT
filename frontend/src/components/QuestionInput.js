@@ -52,6 +52,7 @@ const QuestionInput = ({ onClustersReceived }) => {
                         <option value="dbscan">DBSCAN</option>
                         <option value="hdbscan">HDBSCAN</option>
                         <option value="agglomerative">Agglomerative</option>
+                        <option value="lda">LDA</option>
                     </select>
                 </div>
 
