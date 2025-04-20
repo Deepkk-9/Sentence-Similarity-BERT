@@ -14,6 +14,7 @@ import plotly.graph_objects as go
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 import scipy.spatial
+import os
 
 # Import NLTK for linguistic analysis
 import nltk
@@ -378,4 +379,5 @@ def plot_clusters(embeddings, clusters, questions):
     return fig
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)
