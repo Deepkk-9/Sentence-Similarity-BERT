@@ -35,7 +35,7 @@ model = SentenceTransformer('all-MiniLM-L6-v2')
 plt.switch_backend('Agg')
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins="*")
 
 def analyze_sentence_structure(question):
     """Analyze the linguistic structure of a question using NLTK"""
@@ -180,27 +180,43 @@ def home():
 
 @app.route('/cluster/dbscan', methods=['POST'])
 def cluster_dbscan():
-    data = request.json
-    questions = data.get('questions', [])
-    return generate_clusters(questions, "dbscan")
+    try:
+        data = request.json
+        questions = data.get('questions', [])
+        return generate_clusters(questions, "dbscan")
+    except Exception as e:
+        print("Error in cluster_dbscan:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/cluster/hdbscan', methods=['POST'])
 def cluster_hdbscan():
-    data = request.json
-    questions = data.get('questions', [])
-    return generate_clusters(questions, "hdbscan")
+    try:
+        data = request.json
+        questions = data.get('questions', [])
+        return generate_clusters(questions, "hdbscan")
+    except Exception as e:
+        print("Error in cluster_hddbscan:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/cluster/agglomerative', methods=['POST'])
 def cluster_agglomerative():
-    data = request.json
-    questions = data.get('questions', [])
-    return generate_clusters(questions, "agglomerative")
+    try:
+        data = request.json
+        questions = data.get('questions', [])
+        return generate_clusters(questions, "agglomerative")
+    except Exception as e:
+        print("Error in cluster_agglomerative:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/cluster/lda', methods=['POST'])
 def cluster_lda():
-    data = request.json
-    questions = data.get('questions', [])
-    return generate_clusters(questions, "lda")
+    try:
+        data = request.json
+        questions = data.get('questions', [])
+        return generate_clusters(questions, "lda")
+    except Exception as e:
+        print("Error in cluster_lda:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 
 def get_representative_question(cluster_questions, cluster_embeddings):
